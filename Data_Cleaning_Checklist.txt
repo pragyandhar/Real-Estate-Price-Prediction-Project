@@ -1,0 +1,305 @@
+1. Missing Values
+df.isnull().sum()
+df[df.isnull().any(axis=1)]
+df['COLUMN'] = df['COLUMN'].fillna(df['COLUMN'].median())
+
+2. Duplicates
+df.drop_duplicates(inplace=True)
+
+3. Data Types
+df['COLUMN'] = df['COLUMN'].astype(TYPE)  # e.g. int, float, str
+df['DATE_COLUMN'] = pd.to_datetime(df['DATE_COLUMN'])
+
+4. Outliers
+col = 'COLUMN'
+Q1 = df[col].quantile(0.25)
+Q3 = df[col].quantile(0.75)
+IQR = Q3 - Q1
+df_outliers = df[(df[col] < Q1 - 1.5*IQR) | (df[col] > Q3 + 1.5*IQR)]
+
+5. Trim and Clean Text
+df['TEXT_COLUMN'] = df['TEXT_COLUMN'].str.strip().str.lower()
+
+6. Invalid Values
+df[df['COLUMN'] < MIN_VALUE]
+df[df['COLUMN'] > MAX_VALUE]
+
+7. Categorical Encoding
+df = pd.get_dummies(df, columns=['CAT_COLUMN'])
+
+8. Rare Categorical Grouping
+col = 'CAT_COLUMN'
+freq = df[col].value_counts()
+rare = freq[freq < THRESHOLD].index
+df[col] = df[col].replace(rare, 'other')
+
+9. Scaling Numeric Columns
+from sklearn.preprocessing import StandardScaler
+scaler = StandardScaler()
+df[NUM_COLS] = scaler.fit_transform(df[NUM_COLS])
+
+10. Correlation Check
+corr = df.corr()
+corr
+
+11. Skew Check and transform
+df['COLUMN'].skew()
+df['COLUMN'] = np.log1p(df['COLUMN'])
+
+12. Imbalanced Target
+from imblearn.over_sampling import SMOTE
+X_res, y_res = SMOTE().fit_resample(X, y)
+
+
+
+X----------------------------------------------X
+HOW TO CHECK FOR:
+1.
+Rare category grouping
+Check category counts.
+> df['COL'].value_counts()
+If some categories have very few rows, consider grouping them into other.
+
+2.
+Imbalanced target
+Check class distribution of your target.
+> df['TARGET'].value_counts(normalize=True)
+If one class is much smaller than the other, you have imbalance.
+
+3. 
+Scaling numeric columns
+Look at numeric column ranges.
+> df.describe()
+If one column has values in thousands and another in decimals, scaling is needed.
+
+4. 
+Missing values
+
+What to check
+• How many missing in each column
+• Percent missing
+• Which rows contain missing
+
+How to check
+
+df.isnull().sum()
+df.isnull().mean()  # percent missing per column
+df[df.isnull().any(axis=1)]  # rows with missing
+
+
+What to do after checking
+• Fill with mean or median for numeric
+• Fill with mode for categorical
+• Drop column if most values are missing
+• Drop rows if few rows have missing
+
+Quick rule
+If the column or row has very high missing percent and is not important, remove it.
+
+5. 
+Duplicates
+
+What to check
+• How many rows are exact duplicates
+• Which rows are duplicated
+
+How to check
+
+df.duplicated().sum()
+df[df.duplicated()]  # show duplicate rows
+
+
+What to do after checking
+
+df.drop_duplicates(inplace=True)
+
+
+Quick rule
+If a row appears more than once and there is no reason for it, remove the extra copies.
+
+6. 
+Data types
+
+What to check
+• Each column has the correct type
+• Numeric columns should not be stored as text
+• Dates should be actual datetime objects
+• Categories should not be stored as free text when possible
+
+How to check
+
+df.dtypes
+
+
+Convert types if needed
+
+df['COL'] = df['COL'].astype(int)        # to integer
+df['COL'] = df['COL'].astype(float)      # to float
+df['COL'] = df['COL'].astype(str)        # to string
+df['DATE_COL'] = pd.to_datetime(df['DATE_COL'])
+
+
+Quick rule
+Wrong data type makes cleaning, visualization, and modeling harder. Fix early.
+
+7. 
+Outliers
+
+What to check
+• Values far outside the normal range
+• Sudden spikes that do not match the rest
+• Wrong data entry like 999 for age
+
+How to check
+Use summary stats
+
+df['COL'].describe()
+
+
+Quick visual
+
+df['COL'].plot.box()
+
+
+IQR method
+
+col = 'COL'
+Q1 = df[col].quantile(0.25)
+Q3 = df[col].quantile(0.75)
+IQR = Q3 - Q1
+outliers = df[(df[col] < Q1 - 1.5*IQR) | (df[col] > Q3 + 1.5*IQR)]
+outliers
+
+
+What to do
+• Remove if they are errors
+• Cap them to limits
+• Transform column if skewed
+
+Quick rule
+If the extreme value makes no sense for real life, treat it.
+
+8. 
+Formatting issues in text
+
+What to check
+• Extra spaces
+• Mixed upper and lower case
+• Spelling variations
+• Symbols or numbers that should not be there
+
+How to check
+
+df['TEXT_COL'].sample(10)
+df['TEXT_COL'].unique()
+
+
+Fix common issues
+
+df['TEXT_COL'] = df['TEXT_COL'].str.strip()
+df['TEXT_COL'] = df['TEXT_COL'].str.lower()
+df['TEXT_COL'] = df['TEXT_COL'].str.replace(r'[^a-zA-Z ]', '', regex=True)
+
+
+Quick rule
+Text columns must look consistent before encoding or grouping.
+
+9. 
+Correlation
+
+What to check
+• Features that move together too much
+• Very high positive or negative relationships
+• Redundant features that don’t add new info
+
+How to check
+
+df.corr()
+
+
+Quick visual
+
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+sns.heatmap(df.corr(), annot=False)
+plt.show()
+
+
+What to do
+• Remove one of the highly correlated columns
+• Keep the one that makes more sense for the target
+
+Quick rule
+If two columns are almost the same in numbers, drop one.
+
+10. 
+Skewness
+
+What to check
+• Numeric columns that lean heavily to one side
+• Long tail on left or right side
+• Can affect models that assume normal distribution
+
+How to check
+
+df['NUM_COL'].skew()
+df['NUM_COL'].hist()
+
+
+What to do
+• Log transform
+
+df['NUM_COL'] = np.log1p(df['NUM_COL'])
+
+
+• Square root transform
+
+df['NUM_COL'] = np.sqrt(df['NUM_COL'])
+
+
+• Box-Cox if values are positive
+
+from scipy.stats import boxcox
+df['NUM_COL'], _ = boxcox(df['NUM_COL'] + 1)
+
+
+Quick rule
+If skew value is high in magnitude, apply a transformation to reduce extreme tails.
+
+11. 
+Data leakage
+
+What to check
+• Columns that reveal the target
+• Information from the future that should not be known at training time
+• Direct transformations of the target
+• IDs or unique codes that make prediction too easy
+• Duplicate columns with same info in different form
+
+How to check
+There is no single code. You must review columns with logic.
+
+Checklist
+Look for columns with:
+• Target inside the name
+• Future dates or outcomes
+• Aggregated values calculated using the target
+• Post-event information
+
+Quick manual scan
+
+df.head()
+df.columns
+
+
+Example of leakage
+• Predicting heart disease using “already_had_surgery”
+• Predicting churn using “is_churned” column copied
+• Predicting sales using “total_sales_next_month”
+
+What to do
+• Drop those columns before model training
+
+Quick rule
+If a column would not exist in real life when making predictions, remove it.
